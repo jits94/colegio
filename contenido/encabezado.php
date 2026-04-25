@@ -8,7 +8,7 @@
     <div class="d-flex align-items-center justify-content-between">
       <a href="../../view/boletin" class="logo d-flex align-items-center">
         <img src="../../imagenes/logoInnova3.png" alt=""   class="logo-img">
-        <span class="d-none d-lg-block">Colegio</span>
+        <span class="d-none d-lg-block">SGC</span>
       </a>
       <i class="bi bi-list toggle-sidebar-btn"></i>
     </div><!-- End Logo -->

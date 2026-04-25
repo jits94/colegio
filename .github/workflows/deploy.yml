@@ -23,3 +23,9 @@ jobs:
           port: 21
           local-dir: ./
           server-dir: /public_html/sgc/
+
+          exclude: |
+            **/.git*
+            **/.github/**
+            database.sql
+            vendor/**

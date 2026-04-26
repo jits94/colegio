@@ -1,7 +1,10 @@
   <!-- ======= Header ======= -->
   <script>
     // Ocultar la barra lateral de la izquierda por defecto inmediatamente al cargar el body
-    document.body.classList.add('toggle-sidebar');
+    // Solo se agrega en escritorio (>= 1200px) porque en movil la clase 'toggle-sidebar' la muestra
+    if (window.innerWidth >= 1200) {
+      document.body.classList.add('toggle-sidebar');
+    }
   </script>
   <header id="header" class="header fixed-top d-flex align-items-center">
 

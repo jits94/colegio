@@ -505,175 +505,174 @@ class registro
     } 
 
 
-     function registrarNota($codCursoAlumno,$codMateria,$valor,$tipo,$posicion,$trimestre,$gestion=''){
+    function registrarNota($codCursoAlumno, $codMateria, $valor, $tipo, $posicion, $trimestre, $gestion = '') {
         $db = new MySQL();
         if ($db->Error()) {
             $db->Kill();
-          //  return 0;
+            //  return 0;
             return array('request' => 'error', 'mensaje' => 'Error interno');
-        }      
+        }
 
         $consulta = "SELECT * from notas where `codCursoAlumnos` = " . $db->GetSQLValue($codCursoAlumno, MySQL::SQLVALUE_NUMBER) . " and `codMateria` = " . $db->GetSQLValue($codMateria, MySQL::SQLVALUE_NUMBER) . " and trimestre = " . $db->GetSQLValue($trimestre, MySQL::SQLVALUE_NUMBER) . " and gestion = " . $db->GetSQLValue($gestion);
         $db->Query($consulta);
 
-        if($db->RowCount() > 0){
-            $row = $db->Row();            
-            $codNotas= $row->id;
+        if ($db->RowCount() > 0) {
+            $row = $db->Row();
+            $codNotas = $row->id;
 
             $campo = "";
-            if($tipo=='Ser'){
-                if($posicion == 1){
-                    $campo=" calificacion1Ser = $valor";
+            if ($tipo == 'Ser') {
+                if ($posicion == 1) {
+                    $campo = "calificacion1Ser";
                 }
-                 if($posicion == 2){
-                    $campo=" calificacion2Ser = $valor";
+                if ($posicion == 2) {
+                    $campo = "calificacion2Ser";
                 }
-                 if($posicion == 3){
-                    $campo=" calificacion3Ser = $valor";
-                }
-            }
-            if($tipo=='Saber'){
-                if($posicion == 1){
-                    $campo=" calificacion1Saber = $valor";
-                }
-                 if($posicion == 2){
-                    $campo=" calificacion2Saber = $valor";
-                }
-                 if($posicion == 3){
-                    $campo=" calificacion3Saber = $valor";
-                }
-                  if($posicion == 4){
-                    $campo=" calificacion4Saber = $valor";
-                }
-                  if($posicion == 5){
-                    $campo=" calificacion5Saber = $valor";
-                }
-                  if($posicion == 6){
-                    $campo=" calificacion6Saber = $valor";
+                if ($posicion == 3) {
+                    $campo = "calificacion3Ser";
                 }
             }
-            if($tipo=='Hacer'){
-                if($posicion == 1){
-                    $campo=" calificacion1Hacer = $valor";
+            if ($tipo == 'Saber') {
+                if ($posicion == 1) {
+                    $campo = "calificacion1Saber";
                 }
-                 if($posicion == 2){
-                    $campo=" calificacion2Hacer = $valor";
+                if ($posicion == 2) {
+                    $campo = "calificacion2Saber";
                 }
-                 if($posicion == 3){
-                    $campo=" calificacion3Hacer = $valor";
+                if ($posicion == 3) {
+                    $campo = "calificacion3Saber";
                 }
-                  if($posicion == 4){
-                    $campo=" calificacion4Hacer = $valor";
+                if ($posicion == 4) {
+                    $campo = "calificacion4Saber";
                 }
-                  if($posicion == 5){
-                    $campo=" calificacion5Hacer = $valor";
+                if ($posicion == 5) {
+                    $campo = "calificacion5Saber";
                 }
-                  if($posicion == 6){
-                    $campo=" calificacion6Hacer = $valor";
+                if ($posicion == 6) {
+                    $campo = "calificacion6Saber";
                 }
             }
-
-             if($tipo=='Decidir'){
-                if($posicion == 1){
-                    $campo=" calificacion1Decidir = $valor";
+            if ($tipo == 'Hacer') {
+                if ($posicion == 1) {
+                    $campo = "calificacion1Hacer";
                 }
-                 if($posicion == 2){
-                    $campo=" calificacion2Decidir = $valor";
+                if ($posicion == 2) {
+                    $campo = "calificacion2Hacer";
                 }
-                 if($posicion == 3){
-                    $campo=" calificacion3Decidir = $valor";
+                if ($posicion == 3) {
+                    $campo = "calificacion3Hacer";
+                }
+                if ($posicion == 4) {
+                    $campo = "calificacion4Hacer";
+                }
+                if ($posicion == 5) {
+                    $campo = "calificacion5Hacer";
+                }
+                if ($posicion == 6) {
+                    $campo = "calificacion6Hacer";
                 }
             }
 
-            if($tipo=='AutoEvaliacion'){        
-                $campo=" autoevaluacion = $valor";                
+            if ($tipo == 'Decidir') {
+                if ($posicion == 1) {
+                    $campo = "calificacion1Decidir";
+                }
+                if ($posicion == 2) {
+                    $campo = "calificacion2Decidir";
+                }
+                if ($posicion == 3) {
+                    $campo = "calificacion3Decidir";
+                }
+            }
+
+            if ($tipo == 'AutoEvaliacion') {
+                $campo = "autoevaluacion";
             }
 
             $consulta = "UPDATE `notas` SET `$campo` = " . $db->GetSQLValue($valor, MySQL::SQLVALUE_NUMBER) . " WHERE id = " . $db->GetSQLValue($codNotas, MySQL::SQLVALUE_NUMBER);
-        }
-        else{
+        } else {
 
-             $campo = "";
-            
-            if($tipo=='Ser'){
-                if($posicion == 1){
-                    $campo=" calificacion1Ser";
-                   
+            $campo = "";
+
+            if ($tipo == 'Ser') {
+                if ($posicion == 1) {
+                    $campo = "calificacion1Ser";
+
                 }
-                 if($posicion == 2){
-                    $campo=" calificacion2Ser";
-                  
+                if ($posicion == 2) {
+                    $campo = "calificacion2Ser";
+
                 }
-                 if($posicion == 3){
-                    $campo=" calificacion3Ser";                   
+                if ($posicion == 3) {
+                    $campo = "calificacion3Ser";
                 }
             }
-             if($tipo=='Saber'){
-                if($posicion == 1){
-                    $campo=" calificacion1Saber";
-                   
-                }
-                 if($posicion == 2){
-                    $campo=" calificacion2Saber";
-                  
-                }
-                 if($posicion == 3){
-                    $campo=" calificacion3Saber";                   
-                }
-                 if($posicion == 4){
-                    $campo=" calificacion4Saber ";
-                   
-                }
-                 if($posicion == 5){
-                    $campo=" calificacion5Saber";
-                  
-                }
-                 if($posicion == 6){
-                    $campo=" calificacion6Saber";                   
-                }
-            }
+            if ($tipo == 'Saber') {
+                if ($posicion == 1) {
+                    $campo = "calificacion1Saber";
 
-              if($tipo=='Hacer'){
-                if($posicion == 1){
-                    $campo=" calificacion1Hacer";
-                   
                 }
-                 if($posicion == 2){
-                    $campo=" calificacion2Hacer";
-                  
+                if ($posicion == 2) {
+                    $campo = "calificacion2Saber";
+
                 }
-                 if($posicion == 3){
-                    $campo=" calificacion3Hacer";                   
+                if ($posicion == 3) {
+                    $campo = "calificacion3Saber";
                 }
-                 if($posicion == 4){
-                    $campo=" calificacion4Hacer ";
-                   
+                if ($posicion == 4) {
+                    $campo = "calificacion4Saber";
+
                 }
-                 if($posicion == 5){
-                    $campo=" calificacion5Hacer";
-                  
+                if ($posicion == 5) {
+                    $campo = "calificacion5Saber";
+
                 }
-                 if($posicion == 6){
-                    $campo=" calificacion6Hacer";                   
+                if ($posicion == 6) {
+                    $campo = "calificacion6Saber";
                 }
             }
 
-              if($tipo=='Decidir'){
-                if($posicion == 1){
-                    $campo=" calificacion1Decidir";
-                   
+            if ($tipo == 'Hacer') {
+                if ($posicion == 1) {
+                    $campo = "calificacion1Hacer";
+
                 }
-                 if($posicion == 2){
-                    $campo=" calificacion2Decidir";
-                  
+                if ($posicion == 2) {
+                    $campo = "calificacion2Hacer";
+
                 }
-                 if($posicion == 3){
-                    $campo=" calificacion3Decidir";                   
+                if ($posicion == 3) {
+                    $campo = "calificacion3Hacer";
+                }
+                if ($posicion == 4) {
+                    $campo = "calificacion4Hacer";
+
+                }
+                if ($posicion == 5) {
+                    $campo = "calificacion5Hacer";
+
+                }
+                if ($posicion == 6) {
+                    $campo = "calificacion6Hacer";
                 }
             }
 
-             if($tipo=='AutoEvaliacion'){        
-                $campo=" autoevaluacion";                
+            if ($tipo == 'Decidir') {
+                if ($posicion == 1) {
+                    $campo = "calificacion1Decidir";
+
+                }
+                if ($posicion == 2) {
+                    $campo = "calificacion2Decidir";
+
+                }
+                if ($posicion == 3) {
+                    $campo = "calificacion3Decidir";
+                }
+            }
+
+            if ($tipo == 'AutoEvaliacion') {
+                $campo = "autoevaluacion";
             }
 
             $consulta = "INSERT INTO `notas`( `codCursoAlumnos`, `codMateria`, `trimestre`, `gestion`, `$campo`) values(" . $db->GetSQLValue($codCursoAlumno, MySQL::SQLVALUE_NUMBER) . "," . $db->GetSQLValue($codMateria, MySQL::SQLVALUE_NUMBER) . "," . $db->GetSQLValue($trimestre, MySQL::SQLVALUE_NUMBER) . "," . $db->GetSQLValue($gestion) . "," . $db->GetSQLValue($valor, MySQL::SQLVALUE_NUMBER) . ")";

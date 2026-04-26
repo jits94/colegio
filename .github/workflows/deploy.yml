@@ -22,4 +22,12 @@ jobs:
           protocol: ftps
           port: 21
           local-dir: ./
-          server-dir: /public_html/sgc/
+          server-dir: /sgc/
+
+          exclude: |
+            **/.git*
+            **/.github/**
+            database.sql
+            vendor/**
+            assets/**
+            clases/PHPExcel/**

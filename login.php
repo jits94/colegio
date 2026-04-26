@@ -102,9 +102,12 @@ background-size: cover;
                     </div>
 
                     <div class="col-12">
-                      <div class="form-floating mb-3">
+                      <div class="form-floating mb-3 position-relative">
                         <input type="password" class="form-control" id="contra" placeholder="Contraseña">
                         <label for="floatingInput">Contraseña</label>
+                        <span class="position-absolute end-0 top-50 translate-middle-y pe-3" style="cursor: pointer; z-index: 10;" onclick="togglePassword()">
+                          <i class="bi bi-eye" id="togglePasswordIcon"></i>
+                        </span>
                       </div>
                     </div>
                    
@@ -155,6 +158,19 @@ background-size: cover;
 
 
       <script>
+    function togglePassword() {
+      const passwordInput = document.getElementById('contra');
+      const icon = document.getElementById('togglePasswordIcon');
+      if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
+      } else {
+        passwordInput.type = 'password';
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
+      }
+    }
 
     $(document).ready(function() {
         // Detectar Enter en un input específico

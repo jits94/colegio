@@ -29,5 +29,4 @@ jobs:
             **/.github/**
             database.sql
             vendor/**
-            assets/**
             clases/PHPExcel/**

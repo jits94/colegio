@@ -30,3 +30,4 @@ jobs:
             database.sql
             vendor/**
             clases/PHPExcel/**
+            assets/vendor/**

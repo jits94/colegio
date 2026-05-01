@@ -54,7 +54,7 @@ if(!isset($ruta_assets)){
    ========================================================= */
 table.dataTable {
     border-collapse: collapse !important;
-    margin-top: 15px !important;
+    margin-top: 0px !important;
     margin-bottom: 15px !important;
     width: 100% !important;
 }
@@ -131,6 +131,15 @@ table.dataTable tbody tr:hover {
 /* Contenedor responsivo sin bordes sucios */
 .table-responsive {
     border: none !important;
+}
+/* Eliminar espacio entre cabecera y cuerpo en scrollY */
+.dataTables_scrollHeadInner, .dataTables_scrollHeadInner table {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}
+.dataTables_scrollBody table {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
 }
 </style>
 

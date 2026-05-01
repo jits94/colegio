@@ -1065,6 +1065,7 @@ if ($operacion == "traerAlumnos") {
     $gestion = @$_POST["gestion"];
 
     $res = $iregistro->traerAlumnos($codCurso, $estado, $gestion);
+    $promedios = $iregistro->traerPromediosAnualesCurso($codCurso, $gestion);
 
     $html = "";
     $html .= ' <div class="table-responsive">';
@@ -1095,7 +1096,7 @@ if ($operacion == "traerAlumnos") {
             $row = $res->Row();
             $nombreCompleto = $row->apellidos . " " . $row->nombres;
             //  $cantidadCompras  = 0;
-            $notaAlumno = $iregistro->traerNotasXAlumnos($row->id, $row->gestion);
+            $notaAlumno = isset($promedios[$row->id]) ? $promedios[$row->id] : 0;
 
             $html .= '<tr>';
             $html .= '    <td>' . $count . '</td>';
@@ -1547,7 +1548,7 @@ if ($operacion == 'traerIngresos') {
     $html = '<table class="table table-bordered table-striped" id="tablaHistorico">
                 <thead class="bg-primary text-white">
                     <tr>
-                        <th>#</th><th>Alumno</th><th>Concepto</th><th>Fecha</th><th>Mes</th><th>Gestión</th><th>Monto</th><th>Acción</th>
+                        <th>#</th><th>Alumno</th><th>Curso</th><th>Fecha Registro</th><th>Mes</th><th>Gestión</th><th>Monto</th><th>Acción</th>
                     </tr>
                 </thead><tbody>';
     $total = 0;
@@ -1559,7 +1560,7 @@ if ($operacion == 'traerIngresos') {
             $html .= "<tr>
                         <td>{$row['id']}</td>
                         <td>{$row['nombreAlumno']}</td>
-                        <td>{$row['concepto']}</td>
+                        <td>{$row['curso']} - {$row['nivel']}</td>
                         <td>{$row['fechaPago']}</td>
                         <td>{$mesStr}</td>
                         <td>{$row['gestion']}</td>
@@ -1569,6 +1570,55 @@ if ($operacion == 'traerIngresos') {
         }
     }
     $html .= '</tbody><tfoot><tr><th colspan="6" style="text-align:right">TOTAL:</th><th>Bs. ' . number_format($total, 2) . '</th><th></th></tr></tfoot></table>';
+    echo $html;
+}
+
+if ($operacion == 'traerDeudores') {
+    $gestion = $_POST['gestion'];
+    $mes = $_POST['mes'] ?? date('n');
+    $codCurso = $_POST['codCurso'] ?? 0;
+    $codAlumno = $_POST['codAlumno'] ?? 0;
+    
+    $meses = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+    $html = '<table class="table table-bordered table-striped" id="tablaHistorico">
+                <thead class="bg-warning text-dark">
+                    <tr>
+                        <th>#</th><th>Alumno</th><th>Curso</th><th>Mes Adeudado</th><th>Gestión</th><th>Acción</th>
+                    </tr>
+                </thead><tbody>';
+    $count = 0;
+
+    $mesesAFiltrar = ($mes == 0) ? [1,2,3,4,5,6,7,8,9,10,11,12] : [$mes];
+    
+    foreach ($mesesAFiltrar as $m) {
+        $res = $iregistro->traerDeudores($gestion, $m, $codCurso, $codAlumno);
+        if ($res) {
+            foreach ($res as $row) {
+                $count++;
+                $mesStr = $meses[$m];
+                $nombreCompleto = $row['apellidos'] . " " . $row['nombres'];
+                $nombreJson = json_encode($nombreCompleto);
+                $html .= "<tr>
+                            <td>{$count}</td>
+                            <td>{$nombreCompleto}</td>
+                            <td>{$row['curso']} - {$row['nivel']}</td>
+                            <td>{$mesStr}</td>
+                            <td>{$gestion}</td>
+                            <td>
+                                <button class='btn btn-success btn-sm' onclick='pagar({$row['codAlumno']}, {$m}, {$gestion}, " . htmlspecialchars($nombreJson, ENT_QUOTES) . ", {$row['codCurso']})'>
+                                    <i class='bi bi-cash'></i> Pagar
+                                </button>
+                            </td>
+                          </tr>";
+            }
+        }
+    }
+    
+    if ($count == 0) {
+        $html .= '<tr><td colspan="6" class="text-center">No se encontraron deudores para los filtros seleccionados.</td></tr>';
+    }
+    $html .= '</tbody></table>';
     echo $html;
 }
 
@@ -1633,17 +1683,19 @@ if ($operacion == 'balanceGeneral') {
     $ingresosMes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     $egresosMes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
-    $ing = $iregistro->traerIngresos($gestion, 0);
-    if ($ing)
-        foreach ($ing as $r) {
-            $ingresosMes[$r['mes']] += $r['monto'];
+    $ing = $iregistro->traerTotalesIngresosMes($gestion);
+    if ($ing) {
+        foreach ($ing as $mes_idx => $total) {
+            $ingresosMes[$mes_idx] = $total;
         }
+    }
 
-    $egr = $iregistro->traerEgresos($gestion, 0);
-    if ($egr)
-        foreach ($egr as $r) {
-            $egresosMes[$r['mes']] += $r['monto'];
+    $egr = $iregistro->traerTotalesEgresosMes($gestion);
+    if ($egr) {
+        foreach ($egr as $mes_idx => $total) {
+            $egresosMes[$mes_idx] = $total;
         }
+    }
 
     $html = '<table class="table table-bordered table-striped" id="tablaHistorico">
                 <thead class="bg-dark text-white">
@@ -1681,7 +1733,10 @@ if ($operacion == 'balanceGeneral') {
     echo json_encode([
         'html' => $html,
         'ingresos' => array_values(array_slice($ingresosMes, 1)),
-        'egresos' => array_values(array_slice($egresosMes, 1))
+        'egresos' => array_values(array_slice($egresosMes, 1)),
+        'totalIngresos' => number_format($t_ing, 2),
+        'totalEgresos' => number_format($t_egr, 2),
+        'totalLiquido' => number_format($t_liq, 2)
     ]);
 }
 
@@ -1697,7 +1752,7 @@ if ($operacion == 'traerAlumnosFiltroFinanzas') {
     }
 
     $db->Query("SELECT ca.id, CONCAT(ca.apellidos, ' ', ca.nombres) as nombre FROM cursoalumnos ca WHERE $cond ORDER BY ca.apellidos ASC");
-    $opts = "<option value='0'>Seleccione un Estudiante</option>";
+    $opts = "";
     while (!$db->EndOfSeek()) {
         $row = $db->Row();
         $opts .= "<option value='{$row->id}'>{$row->nombre}</option>";

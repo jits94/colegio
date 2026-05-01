@@ -421,58 +421,62 @@ class registro
     }
      
       
-    function traerNotasXAlumnos($codAlumnoCurso, $gestion) {
+    public function traerPromediosAnualesCurso($codCurso, $gestion) {
         $db = new MySQL();
-        if ($db->Error()) {
-            $db->Kill();
-            return 0;
-        }
-
-        // Paso 1: obtener el codCurso del alumno
-        if (!$db->Query("SELECT codCurso FROM cursoAlumnos WHERE id = $codAlumnoCurso AND baja = '0'")) {
-            return 0;
-        }
-        $alumnoRow = $db->Row();
-        if (!$alumnoRow) return 0;
-        $codCurso = $alumnoRow->codCurso;
-
-        // Paso 2: obtener TODAS las materias del curso en esa gestion (igual que traerBoletin)
-        $db2 = new MySQL();
-        if (!$db2->Query("SELECT cm.codMateria FROM cursoMateria cm WHERE cm.codCurso = $codCurso AND cm.gestion = '$gestion' AND cm.baja = 0 ORDER BY cm.id ASC")) {
-            return 0;
-        }
-        if ($db2->RowCount() == 0) return 0;
-
+        
+        // 1. Obtener todas las materias del curso en esa gestion
         $materias = [];
-        $db2->MoveFirst();
-        while (!$db2->EndOfSeek()) {
-            $materias[] = $db2->Row()->codMateria;
+        if (!$db->Query("SELECT codMateria FROM cursoMateria WHERE codCurso = " . intval($codCurso) . " AND gestion = " . $db->GetSQLValue($gestion) . " AND baja = 0")) {
+            return [];
         }
-
+        while (!$db->EndOfSeek()) { $materias[] = $db->Row()->codMateria; }
         $totalMaterias = count($materias);
-        if ($totalMaterias == 0) return 0;
+        if ($totalMaterias == 0) return [];
 
-        $sumaPromediosMaterias = 0;
+        // 2. Obtener todos los alumnos del curso
+        $alumnos = [];
+        if (!$db->Query("SELECT id FROM cursoAlumnos WHERE codCurso = " . intval($codCurso) . " AND baja = '0'")) {
+            return [];
+        }
+        while (!$db->EndOfSeek()) { $alumnos[] = $db->Row()->id; }
+        if (count($alumnos) == 0) return [];
 
-        // Paso 3: calcular promedio anual por materia igual que generarBoletin.php
-        foreach ($materias as $codMateria) {
-            $notas1 = $this->traerNotasAlumnos($codMateria, $codAlumnoCurso, 1, $gestion);
-            $prom1  = $this->calcularPromedio($notas1);
-
-            $notas2 = $this->traerNotasAlumnos($codMateria, $codAlumnoCurso, 2, $gestion);
-            $prom2  = $this->calcularPromedio($notas2);
-
-            $notas3 = $this->traerNotasAlumnos($codMateria, $codAlumnoCurso, 3, $gestion);
-            $prom3  = $this->calcularPromedio($notas3);
-
-            // Promedio anual materia = (T1 + T2 + T3) / 3  (igual que boletin linea 338)
-            $sumaPromediosMaterias += ($prom1 + $prom2 + $prom3) / 3;
+        // 3. Obtener TODAS las notas de estos alumnos en estas materias y gestion
+        $notasMap = [];
+        $idsAlumnos = implode(',', $alumnos);
+        $idsMaterias = implode(',', $materias);
+        $db->Query("SELECT * FROM notas WHERE codCursoAlumnos IN ($idsAlumnos) AND codMateria IN ($idsMaterias) AND gestion = " . $db->GetSQLValue($gestion));
+        while (!$db->EndOfSeek()) {
+            $row = (array)$db->Row();
+            $notasMap[$row['codCursoAlumnos']][$row['codMateria']][$row['trimestre']] = (object)$row;
         }
 
-        // Paso 4: promedio general = suma / total materias (materias con 0 cuentan)
-        return $sumaPromediosMaterias / $totalMaterias;
+        $promediosAnuales = [];
+        foreach ($alumnos as $alumnoId) {
+            $sumaPromediosMaterias = 0;
+            foreach ($materias as $materiaId) {
+                $sumaTrimestres = 0;
+                for ($t = 1; $t <= 3; $t++) {
+                    $n = isset($notasMap[$alumnoId][$materiaId][$t]) ? $notasMap[$alumnoId][$materiaId][$t] : null;
+                    $sumaTrimestres += $this->calcularPromedio($n);
+                }
+                $sumaPromediosMaterias += $sumaTrimestres / 3;
+            }
+            $promediosAnuales[$alumnoId] = $sumaPromediosMaterias / $totalMaterias;
+        }
+
+        return $promediosAnuales;
     }
 
+    function traerNotasXAlumnos($codAlumnoCurso, $gestion) {
+        $db = new MySQL();
+        $db->Query("SELECT codCurso FROM cursoAlumnos WHERE id = ".intval($codAlumnoCurso));
+        $row = $db->Row();
+        if (!$row) return 0;
+        
+        $proms = $this->traerPromediosAnualesCurso($row->codCurso, $gestion);
+        return isset($proms[$codAlumnoCurso]) ? $proms[$codAlumnoCurso] : 0;
+    }
     function traerNotasAlumnos($codMateria,$codCursoAlumno,$trimestre="",$gestion=''){
         $db = new MySQL();
         if ($db->Error()) {
@@ -1698,7 +1702,12 @@ class registro
         $db = new MySQL();
         $cond = "";
         if ($mes > 0) $cond = " AND i.mes = $mes ";
-        $c = "SELECT i.*, CONCAT(a.apellidos, ' ', a.nombres) as nombreAlumno FROM ingresos i LEFT JOIN cursoAlumnos a ON i.codAlumno = a.id WHERE i.gestion = $gestion $cond AND i.baja = 0 ORDER BY i.id DESC";
+        $c = "SELECT i.*, CONCAT(a.apellidos, ' ', a.nombres) as nombreAlumno, cu.grado as curso, cu.nivel 
+              FROM ingresos i 
+              LEFT JOIN cursoAlumnos a ON i.codAlumno = a.id 
+              LEFT JOIN curso cu ON a.codCurso = cu.id
+              WHERE i.gestion = $gestion $cond AND i.baja = 0 
+              ORDER BY i.id DESC";
         if (!$db->Query($c)) return false;
         $res = [];
         while (!$db->EndOfSeek()) { $res[] = (array)$db->Row(); }
@@ -1709,6 +1718,46 @@ class registro
         $db = new MySQL();
         if (!$db->Query("UPDATE ingresos SET baja = 1 WHERE id = $id")) { return array('request' => 'error', 'mensaje' => 'Error al eliminar'); }
         return array('request' => 'ok', 'mensaje' => 'Eliminado exitosamente');
+    }
+
+    public function traerTotalesIngresosMes($gestion) {
+        $db = new MySQL();
+        $c = "SELECT mes, SUM(monto) as total FROM ingresos WHERE gestion = ".intval($gestion)." AND baja = 0 GROUP BY mes";
+        if (!$db->Query($c)) return false;
+        $res = [];
+        while (!$db->EndOfSeek()) { $row = $db->Row(); $res[$row->mes] = $row->total; }
+        return $res;
+    }
+
+    public function traerTotalesEgresosMes($gestion) {
+        $db = new MySQL();
+        $c = "SELECT mes, SUM(monto) as total FROM egresos WHERE gestion = ".intval($gestion)." AND baja = 0 GROUP BY mes";
+        if (!$db->Query($c)) return false;
+        $res = [];
+        while (!$db->EndOfSeek()) { $row = $db->Row(); $res[$row->mes] = $row->total; }
+        return $res;
+    }
+
+    public function traerDeudores($gestion, $mes, $codCurso, $codAlumno) {
+        $db = new MySQL();
+        $cond = "";
+        if ($codCurso > 0) $cond .= " AND ca.codCurso = " . intval($codCurso);
+        if ($codAlumno > 0) $cond .= " AND ca.id = " . intval($codAlumno);
+        
+        $c = "SELECT ca.id as codAlumno, ca.nombres, ca.apellidos, ca.codCurso, cu.grado as curso, cu.nivel as nivel
+              FROM cursoAlumnos ca
+              LEFT JOIN curso cu ON cu.id = ca.codCurso
+              WHERE ca.gestion = " . intval($gestion) . " AND ca.baja = 0 $cond
+              AND NOT EXISTS (
+                  SELECT 1 FROM ingresos i 
+                  WHERE i.codAlumno = ca.id AND i.gestion = " . intval($gestion) . " AND i.mes = " . intval($mes) . " AND i.baja = 0
+              )
+              ORDER BY cu.grado ASC, ca.apellidos ASC, ca.nombres ASC";
+              
+        if (!$db->Query($c)) return false;
+        $res = [];
+        while (!$db->EndOfSeek()) { $res[] = (array)$db->Row(); }
+        return $res;
     }
 
     public function crearEgreso($monto, $fechaEgreso, $mes, $gestion, $concepto) {

@@ -103,6 +103,12 @@ $_SESSION['last_activity'] = time();
         </a>
       </li>
       <li class="nav-item">
+        <a class="nav-link collapsed  <?php if (strtolower($nombredelarchivo) == '../deudores/') { echo 'active';}  ?>" href="../deudores/">
+       <i class="bi bi-person-x"></i>
+          <span>Deudores  </span>
+        </a>
+      </li>
+      <li class="nav-item">
         <a class="nav-link collapsed  <?php if (strtolower($nombredelarchivo) == '../egresos/') { echo 'active';}  ?>" href="../egresos/">
        <i class="bi bi-cart-dash"></i>
           <span>Egresos  </span>

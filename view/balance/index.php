@@ -201,6 +201,7 @@ include '../../contenido/sesion.php';
 
           var labels = egresosPorConcepto.map(function(item) { return item.concepto; });
           var series = egresosPorConcepto.map(function(item) { return parseFloat(item.total); });
+          var ids = egresosPorConcepto.map(function(item) { return item.id; });
 
           var options = {
             series: series,
@@ -210,12 +211,12 @@ include '../../contenido/sesion.php';
               height: 380,
               events: {
                 dataPointSelection: function(event, chartContext, config) {
-                  var concepto = labels[config.dataPointIndex];
-                  if (!concepto) {
+                  var codConceptosEgresos = ids[config.dataPointIndex];
+                  if (!codConceptosEgresos) {
                     return;
                   }
                   var url = '../egresos/?gestion=' + encodeURIComponent(gestion) +
-                    '&concepto=' + encodeURIComponent(concepto) +
+                    '&codConceptosEgresos=' + encodeURIComponent(codConceptosEgresos) +
                     '&origen=balance';
                   window.location.href = url;
                 }

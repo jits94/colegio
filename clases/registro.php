@@ -1790,16 +1790,19 @@ class registro
 
     public function traerTotalesEgresosPorConcepto($gestion) {
         $db = new MySQL();
-        $c = "SELECT concepto, SUM(monto) as total
-              FROM egresos
-              WHERE gestion = " . intval($gestion) . " AND baja = 0
-              GROUP BY concepto
-              ORDER BY total DESC, concepto ASC";
+        if (!$this->asegurarTablaConceptosEgreso($db)) return false;
+        $c = "SELECT ce.id, ce.concepto, SUM(e.monto) as total
+              FROM egresos e
+              LEFT JOIN conceptos_egresos ce ON e.codConceptosEgresos = ce.id
+              WHERE e.gestion = " . intval($gestion) . " AND e.baja = 0
+              GROUP BY ce.id, ce.concepto
+              ORDER BY total DESC, ce.concepto ASC";
         if (!$db->Query($c)) return false;
         $res = [];
         while (!$db->EndOfSeek()) {
             $row = $db->Row();
             $res[] = array(
+                'id' => (int)$row->id,
                 'concepto' => $row->concepto,
                 'total' => (float)$row->total
             );
@@ -1850,6 +1853,31 @@ class registro
                            AND TRIM(concepto) <> ''";
 
         $db->Query($sqlMigracion);
+
+        $sqlCheckRelacion = "SHOW COLUMNS FROM `egresos` LIKE 'codConceptosEgresos'";
+        if (!$db->Query($sqlCheckRelacion)) {
+            return false;
+        }
+
+        if ($db->RowCount() == 0) {
+            $sqlAlterRelacion = "ALTER TABLE `egresos`
+                                 ADD COLUMN `codConceptosEgresos` int(11) DEFAULT NULL AFTER `concepto`";
+            if (!$db->Query($sqlAlterRelacion)) {
+                return false;
+            }
+        }
+
+        $sqlBackfill = "UPDATE egresos e
+                        LEFT JOIN conceptos_egresos ce ON ce.concepto = e.concepto
+                        SET e.codConceptosEgresos = ce.id
+                        WHERE e.codConceptosEgresos IS NULL
+                          AND e.concepto IS NOT NULL
+                          AND TRIM(e.concepto) <> ''";
+        $db->Query($sqlBackfill);
+
+        $sqlNullTexto = "ALTER TABLE `egresos` MODIFY COLUMN `concepto` varchar(255) NULL";
+        $db->Query($sqlNullTexto);
+
         return true;
     }
 
@@ -1981,42 +2009,58 @@ class registro
         return array('request' => 'ok', 'mensaje' => 'Concepto activado exitosamente');
     }
 
-    public function crearEgreso($monto, $fechaEgreso, $mes, $gestion, $concepto, $codUsuario) {
+    public function crearEgreso($monto, $fechaEgreso, $mes, $gestion, $codConceptosEgresos, $codUsuario) {
         $db = new MySQL();
-        $concepto = trim($concepto);
-
-        if ($concepto === '') {
-            return array('request' => 'error', 'mensaje' => 'Debe seleccionar un concepto');
-        }
 
         if (!$this->asegurarColumnasUsuarioFinanzas($db)) {
             return array('request' => 'error', 'mensaje' => 'No se pudo preparar la tabla de egresos');
         }
 
-        $this->crearConceptoEgreso($concepto);
+        if (!$this->asegurarTablaConceptosEgreso($db)) {
+            return array('request' => 'error', 'mensaje' => 'No se pudo preparar la tabla de conceptos');
+        }
 
-        $consulta = "INSERT INTO egresos (monto, fechaEgreso, mes, gestion, concepto, codUsuario) VALUES (" .
+        if ((int)$codConceptosEgresos <= 0) {
+            return array('request' => 'error', 'mensaje' => 'Debe seleccionar un concepto');
+        }
+
+        $sqlConcepto = "SELECT id FROM conceptos_egresos
+                        WHERE id = " . $db->GetSQLValue($codConceptosEgresos, MySQL::SQLVALUE_NUMBER) . "
+                          AND baja = 0
+                        LIMIT 1";
+        if (!$db->Query($sqlConcepto)) {
+            return array('request' => 'error', 'mensaje' => 'No se pudo validar el concepto');
+        }
+
+        if ($db->RowCount() == 0) {
+            return array('request' => 'error', 'mensaje' => 'El concepto seleccionado no es válido');
+        }
+
+        $consulta = "INSERT INTO egresos (monto, fechaEgreso, mes, gestion, concepto, codConceptosEgresos, codUsuario) VALUES (" .
             $db->GetSQLValue($monto, MySQL::SQLVALUE_NUMBER) . ", " .
             $db->GetSQLValue($fechaEgreso) . ", " .
             $db->GetSQLValue($mes, MySQL::SQLVALUE_NUMBER) . ", " .
             $db->GetSQLValue($gestion, MySQL::SQLVALUE_NUMBER) . ", " .
-            $db->GetSQLValue($concepto) . ", " .
+            "NULL, " .
+            $db->GetSQLValue($codConceptosEgresos, MySQL::SQLVALUE_NUMBER) . ", " .
             $db->GetSQLValue($codUsuario, MySQL::SQLVALUE_NUMBER) . ")";
         if (!$db->Query($consulta)) { return array('request' => 'error', 'mensaje' => 'Error al registrar egreso'); }
         return array('request' => 'ok', 'mensaje' => 'Egreso registrado exitosamente');
     }
 
-    public function traerEgresos($gestion, $mes, $concepto = '') {
+    public function traerEgresos($gestion, $mes, $codConceptosEgresos = 0) {
         $db = new MySQL();
         if (!$this->asegurarColumnasUsuarioFinanzas($db)) return false;
+        if (!$this->asegurarTablaConceptosEgreso($db)) return false;
         $cond = "";
         if ($mes > 0) $cond = " AND mes = $mes ";
-        if (trim($concepto) !== '') {
-            $cond .= " AND concepto = " . $db->GetSQLValue(trim($concepto));
+        if ((int)$codConceptosEgresos > 0) {
+            $cond .= " AND e.codConceptosEgresos = " . $db->GetSQLValue($codConceptosEgresos, MySQL::SQLVALUE_NUMBER);
         }
-        $c = "SELECT e.*,
+        $c = "SELECT e.*, ce.concepto,
                     COALESCE(CONCAT(per.nombre, ' ', per.apellidos), u.usuario, 'Sin usuario') as usuarioRegistro
               FROM egresos e
+              LEFT JOIN conceptos_egresos ce ON e.codConceptosEgresos = ce.id
               LEFT JOIN usuario u ON e.codUsuario = u.codUsuario
               LEFT JOIN persona per ON u.codPersona = per.id
               WHERE e.gestion = $gestion $cond AND e.baja = 0 ORDER BY e.id DESC";

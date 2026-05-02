@@ -85,7 +85,7 @@ $vieneDeBalance = isset($_GET['origen']) && $_GET['origen'] === 'balance';
           var params = new URLSearchParams(window.location.search);
           var gestion = params.get('gestion');
           var mes = params.get('mes');
-          var concepto = params.get('concepto');
+          var codConceptosEgresos = params.get('codConceptosEgresos');
 
           if (gestion) {
               $("#txtGestionFiltro").val(gestion);
@@ -96,8 +96,8 @@ $vieneDeBalance = isset($_GET['origen']) && $_GET['origen'] === 'balance';
               $("#txtMes").val(mes);
           }
 
-          if (concepto) {
-              $("#txtConceptoFiltro").attr('data-selected', concepto);
+          if (codConceptosEgresos) {
+              $("#txtConceptoFiltro").attr('data-selected', codConceptosEgresos);
           }
       }
 
@@ -116,8 +116,8 @@ $vieneDeBalance = isset($_GET['origen']) && $_GET['origen'] === 'balance';
 
               var opciones = '<option value="">Seleccione un concepto</option>';
               data.datos.forEach(function(item){
-                  var seleccionado = conceptoSeleccionado === item.concepto ? 'selected' : '';
-                  opciones += '<option value="' + escaparHtml(item.concepto) + '" ' + seleccionado + '>' + escaparHtml(item.concepto) + '</option>';
+                  var seleccionado = String(conceptoSeleccionado) === String(item.id) ? 'selected' : '';
+                  opciones += '<option value="' + item.id + '" ' + seleccionado + '>' + escaparHtml(item.concepto) + '</option>';
               });
 
               $("#txtConcepto").html(opciones);
@@ -135,8 +135,8 @@ $vieneDeBalance = isset($_GET['origen']) && $_GET['origen'] === 'balance';
 
               var opciones = '<option value="">Todos los conceptos</option>';
               data.datos.forEach(function(item){
-                  var seleccionado = conceptoFinal === item.concepto ? 'selected' : '';
-                  opciones += '<option value="' + escaparHtml(item.concepto) + '" ' + seleccionado + '>' + escaparHtml(item.concepto) + '</option>';
+                  var seleccionado = String(conceptoFinal) === String(item.id) ? 'selected' : '';
+                  opciones += '<option value="' + item.id + '" ' + seleccionado + '>' + escaparHtml(item.concepto) + '</option>';
               });
 
               $("#txtConceptoFiltro").html(opciones);
@@ -180,15 +180,15 @@ $vieneDeBalance = isset($_GET['origen']) && $_GET['origen'] === 'balance';
           var fechaEgreso = $("#txtFecha").val();
           var gestion = $("#txtGestion").val();
           var mes = $("#txtMes").val();
-          var concepto = $("#txtConcepto").val();
+          var codConceptosEgresos = $("#txtConcepto").val();
 
-          if(monto === "" || concepto === ""){
+          if(monto === "" || codConceptosEgresos === ""){
               Swal.fire('Campos requeridos', 'Seleccione el concepto y registre el monto.', 'warning');
               return;
           }
 
           $.post("../../respuestaParcial.php?operacion=crearEgreso", {
-              monto: monto, fechaEgreso: fechaEgreso, gestion: gestion, mes: mes, concepto: concepto
+              monto: monto, fechaEgreso: fechaEgreso, gestion: gestion, mes: mes, codConceptosEgresos: codConceptosEgresos
           }, function(data){
               if(data.request == 'ok') {
                   Swal.fire('\u00c9xito','Egreso guardado', 'success');
@@ -225,10 +225,10 @@ $vieneDeBalance = isset($_GET['origen']) && $_GET['origen'] === 'balance';
       function filtrar(){
           var gestion = $("#txtGestionFiltro").val();
           var mes = $("#txtMesFiltro").val();
-          var concepto = $("#txtConceptoFiltro").val();
+          var codConceptosEgresos = $("#txtConceptoFiltro").val();
           $("#divResultado").html('Cargando...');
           $.post("../../respuestaParcial.php?operacion=traerEgresos", {
-              gestion: gestion, mes: mes, concepto: concepto
+              gestion: gestion, mes: mes, codConceptosEgresos: codConceptosEgresos
           }, function(data){
               $("#divResultado").html(data);
               $('#tablaHistorico').DataTable({"scrollY": "450px", "scrollX": true});

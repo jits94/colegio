@@ -259,7 +259,8 @@ CREATE TABLE `egresos` (
   `fechaEgreso` date NOT NULL,
   `mes` int(11) NOT NULL,
   `gestion` int(11) NOT NULL,
-  `concepto` varchar(255) NOT NULL,
+  `concepto` varchar(255) DEFAULT NULL,
+  `codConceptosEgresos` int(11) DEFAULT NULL,
   `codUsuario` int(11) DEFAULT NULL,
   `baja` tinyint(1) DEFAULT 0,
   PRIMARY KEY (`id`)
@@ -272,7 +273,7 @@ CREATE TABLE `egresos` (
 
 LOCK TABLES `egresos` WRITE;
 /*!40000 ALTER TABLE `egresos` DISABLE KEYS */;
-INSERT INTO `egresos` VALUES (1,200.00,'2026-04-24',4,2026,'pago de luz',1,0),(2,500.00,'2026-04-24',4,2026,'pago al guardia',1,0);
+INSERT INTO `egresos` VALUES (1,200.00,'2026-04-24',4,2026,NULL,1,1,0),(2,500.00,'2026-04-24',4,2026,NULL,2,1,0);
 /*!40000 ALTER TABLE `egresos` ENABLE KEYS */;
 UNLOCK TABLES;
 

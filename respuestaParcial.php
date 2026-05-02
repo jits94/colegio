@@ -1638,9 +1638,9 @@ if ($operacion == 'crearEgreso') {
     $fechaEgreso = $_POST['fechaEgreso'];
     $mes = $_POST['mes'];
     $gestion = $_POST['gestion'];
-    $concepto = $_POST['concepto'];
+    $codConceptosEgresos = $_POST['codConceptosEgresos'];
     $codUsuario = $_SESSION['codigousuario'];
-    $res = $iregistro->crearEgreso($monto, $fechaEgreso, $mes, $gestion, $concepto, $codUsuario);
+    $res = $iregistro->crearEgreso($monto, $fechaEgreso, $mes, $gestion, $codConceptosEgresos, $codUsuario);
     echo json_encode($res);
 }
 
@@ -1682,8 +1682,8 @@ if ($operacion == 'activarConceptoEgreso') {
 if ($operacion == 'traerEgresos') {
     $gestion = $_POST['gestion'];
     $mes = $_POST['mes'] ?? 0;
-    $concepto = $_POST['concepto'] ?? '';
-    $res = $iregistro->traerEgresos($gestion, $mes, $concepto);
+    $codConceptosEgresos = $_POST['codConceptosEgresos'] ?? 0;
+    $res = $iregistro->traerEgresos($gestion, $mes, $codConceptosEgresos);
 
     $meses = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 

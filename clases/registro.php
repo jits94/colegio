@@ -1930,9 +1930,9 @@ class registro
 
     public function traerConceptosEgreso($soloActivos = true) {
         $db = new MySQL();
-        if (!$this->asegurarTablaConceptosEgreso($db)) {
-            return false;
-        }
+        // if (!$this->asegurarTablaConceptosEgreso($db)) {
+        //     return false;
+        // }
 
         $condicion = $soloActivos ? "WHERE baja = 0" : "";
         $sql = "SELECT id, concepto, baja FROM conceptos_egresos $condicion ORDER BY concepto ASC";

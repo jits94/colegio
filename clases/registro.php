@@ -1790,7 +1790,7 @@ class registro
 
     public function traerTotalesEgresosPorConcepto($gestion) {
         $db = new MySQL();
-        if (!$this->asegurarTablaConceptosEgreso($db)) return false;
+       // if (!$this->asegurarTablaConceptosEgreso($db)) return false;
         $c = "SELECT ce.id, ce.concepto, SUM(e.monto) as total
               FROM egresos e
               LEFT JOIN conceptos_egresos ce ON e.codConceptosEgresos = ce.id
@@ -1889,9 +1889,9 @@ class registro
             return array('request' => 'error', 'mensaje' => 'Debe ingresar un concepto');
         }
 
-        if (!$this->asegurarTablaConceptosEgreso($db)) {
-            return array('request' => 'error', 'mensaje' => 'No se pudo preparar la tabla de conceptos');
-        }
+        // if (!$this->asegurarTablaConceptosEgreso($db)) {
+        //     return array('request' => 'error', 'mensaje' => 'No se pudo preparar la tabla de conceptos');
+        // }
 
         $sqlBuscar = "SELECT * FROM conceptos_egresos WHERE concepto = " . $db->GetSQLValue($concepto) . " LIMIT 1";
         if (!$db->Query($sqlBuscar)) {
@@ -1951,9 +1951,9 @@ class registro
         $db = new MySQL();
         $concepto = trim($concepto);
 
-        if (!$this->asegurarTablaConceptosEgreso($db)) {
-            return array('request' => 'error', 'mensaje' => 'No se pudo preparar la tabla de conceptos');
-        }
+        // if (!$this->asegurarTablaConceptosEgreso($db)) {
+        //     return array('request' => 'error', 'mensaje' => 'No se pudo preparar la tabla de conceptos');
+        // }
 
         if ($concepto === '') {
             return array('request' => 'error', 'mensaje' => 'Debe ingresar un concepto');
@@ -1983,9 +1983,9 @@ class registro
 
     public function desactivarConceptoEgreso($id) {
         $db = new MySQL();
-        if (!$this->asegurarTablaConceptosEgreso($db)) {
-            return array('request' => 'error', 'mensaje' => 'No se pudo preparar la tabla de conceptos');
-        }
+        // if (!$this->asegurarTablaConceptosEgreso($db)) {
+        //     return array('request' => 'error', 'mensaje' => 'No se pudo preparar la tabla de conceptos');
+        // }
 
         $sql = "UPDATE conceptos_egresos SET baja = 1 WHERE id = " . $db->GetSQLValue($id, MySQL::SQLVALUE_NUMBER);
         if (!$db->Query($sql)) {
@@ -1997,9 +1997,9 @@ class registro
 
     public function activarConceptoEgreso($id) {
         $db = new MySQL();
-        if (!$this->asegurarTablaConceptosEgreso($db)) {
-            return array('request' => 'error', 'mensaje' => 'No se pudo preparar la tabla de conceptos');
-        }
+        // if (!$this->asegurarTablaConceptosEgreso($db)) {
+        //     return array('request' => 'error', 'mensaje' => 'No se pudo preparar la tabla de conceptos');
+        // }
 
         $sql = "UPDATE conceptos_egresos SET baja = 0 WHERE id = " . $db->GetSQLValue($id, MySQL::SQLVALUE_NUMBER);
         if (!$db->Query($sql)) {
@@ -2016,9 +2016,9 @@ class registro
             return array('request' => 'error', 'mensaje' => 'No se pudo preparar la tabla de egresos');
         }
 
-        if (!$this->asegurarTablaConceptosEgreso($db)) {
-            return array('request' => 'error', 'mensaje' => 'No se pudo preparar la tabla de conceptos');
-        }
+        // if (!$this->asegurarTablaConceptosEgreso($db)) {
+        //     return array('request' => 'error', 'mensaje' => 'No se pudo preparar la tabla de conceptos');
+        // }
 
         if ((int)$codConceptosEgresos <= 0) {
             return array('request' => 'error', 'mensaje' => 'Debe seleccionar un concepto');
@@ -2051,7 +2051,7 @@ class registro
     public function traerEgresos($gestion, $mes, $codConceptosEgresos = 0) {
         $db = new MySQL();
         if (!$this->asegurarColumnasUsuarioFinanzas($db)) return false;
-        if (!$this->asegurarTablaConceptosEgreso($db)) return false;
+       // if (!$this->asegurarTablaConceptosEgreso($db)) return false;
         $cond = "";
         if ($mes > 0) $cond = " AND mes = $mes ";
         if ((int)$codConceptosEgresos > 0) {

@@ -3,9 +3,25 @@ require_once "mysql.class.php";
 
 class parametros
 {
+    private function asegurarTipoContabilidad()
+    {
+        $db = new MySQL();
+        if ($db->Error())
+            $db->Kill();
+
+        $consultar = "SELECT codTipoUsuario FROM `tipoUsuario` WHERE codTipoUsuario = 6 LIMIT 1";
+        if (!$db->Query($consultar))
+            $db->Kill();
+
+        if ($db->RowCount() == 0) {
+            $insertar = "INSERT INTO `tipoUsuario`(`codTipoUsuario`, `nombre`, `baja`) VALUES (6, 'Contabilidad', 0)";
+            $db->Query($insertar);
+        }
+    }
 
     public function DropDownTipoUsuario($cod = '')
     {
+        $this->asegurarTipoContabilidad();
 
         $db = new MySQL();
         if ($db->Error())

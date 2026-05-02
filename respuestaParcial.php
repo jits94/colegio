@@ -1534,14 +1534,17 @@ if ($operacion == 'crearIngreso') {
     $mes = $_POST['mes'];
     $gestion = $_POST['gestion'];
     $concepto = $_POST['concepto'];
-    $res = $iregistro->crearIngreso($codAlumno, $monto, $fechaPago, $mes, $gestion, $concepto);
+    $codUsuario = $_SESSION['codigousuario'];
+    $res = $iregistro->crearIngreso($codAlumno, $monto, $fechaPago, $mes, $gestion, $concepto, $codUsuario);
     echo json_encode($res);
 }
 
 if ($operacion == 'traerIngresos') {
     $gestion = $_POST['gestion'];
     $mes = $_POST['mes'] ?? 0; // 0 = Todos
-    $res = $iregistro->traerIngresos($gestion, $mes);
+    $codCurso = $_POST['codCurso'] ?? 0;
+    $codAlumno = $_POST['codAlumno'] ?? 0;
+    $res = $iregistro->traerIngresos($gestion, $mes, $codCurso, $codAlumno);
 
     $meses = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
@@ -1564,12 +1567,14 @@ if ($operacion == 'traerIngresos') {
                         <td>{$row['fechaPago']}</td>
                         <td>{$mesStr}</td>
                         <td>{$row['gestion']}</td>
+                        <td>{$row['usuarioRegistro']}</td>
                         <td>Bs. " . number_format($row['monto'], 2) . "</td>
                         <td><button class='btn btn-danger btn-sm' onclick='eliminarIngreso({$row['id']})'><i class='bi bi-trash'></i></button></td>
                       </tr>";
         }
     }
-    $html .= '</tbody><tfoot><tr><th colspan="6" style="text-align:right">TOTAL:</th><th>Bs. ' . number_format($total, 2) . '</th><th></th></tr></tfoot></table>';
+    $html = preg_replace('/<th>Monto<\/th><th>.*?<\/th>/', '<th>Registrado Por</th><th>Monto</th><th>Accion</th>', $html, 1);
+    $html .= '</tbody><tfoot><tr><th colspan="7" style="text-align:right">TOTAL:</th><th>Bs. ' . number_format($total, 2) . '</th><th></th></tr></tfoot></table>';
     echo $html;
 }
 
@@ -1634,14 +1639,51 @@ if ($operacion == 'crearEgreso') {
     $mes = $_POST['mes'];
     $gestion = $_POST['gestion'];
     $concepto = $_POST['concepto'];
-    $res = $iregistro->crearEgreso($monto, $fechaEgreso, $mes, $gestion, $concepto);
+    $codUsuario = $_SESSION['codigousuario'];
+    $res = $iregistro->crearEgreso($monto, $fechaEgreso, $mes, $gestion, $concepto, $codUsuario);
+    echo json_encode($res);
+}
+
+if ($operacion == 'crearConceptoEgreso') {
+    $concepto = $_POST['concepto'] ?? '';
+    $res = $iregistro->crearConceptoEgreso($concepto);
+    echo json_encode($res);
+}
+
+if ($operacion == 'traerConceptosEgreso') {
+    $soloActivos = ($_POST['soloActivos'] ?? '1') === '1';
+    $res = $iregistro->traerConceptosEgreso($soloActivos);
+    if ($res === false) {
+        echo json_encode(array('request' => 'error', 'mensaje' => 'No se pudieron obtener los conceptos'));
+    } else {
+        echo json_encode(array('request' => 'ok', 'datos' => $res));
+    }
+}
+
+if ($operacion == 'editarConceptoEgreso') {
+    $id = $_POST['id'];
+    $concepto = $_POST['concepto'] ?? '';
+    $res = $iregistro->editarConceptoEgreso($id, $concepto);
+    echo json_encode($res);
+}
+
+if ($operacion == 'desactivarConceptoEgreso') {
+    $id = $_POST['id'];
+    $res = $iregistro->desactivarConceptoEgreso($id);
+    echo json_encode($res);
+}
+
+if ($operacion == 'activarConceptoEgreso') {
+    $id = $_POST['id'];
+    $res = $iregistro->activarConceptoEgreso($id);
     echo json_encode($res);
 }
 
 if ($operacion == 'traerEgresos') {
     $gestion = $_POST['gestion'];
     $mes = $_POST['mes'] ?? 0;
-    $res = $iregistro->traerEgresos($gestion, $mes);
+    $concepto = $_POST['concepto'] ?? '';
+    $res = $iregistro->traerEgresos($gestion, $mes, $concepto);
 
     $meses = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
@@ -1662,12 +1704,14 @@ if ($operacion == 'traerEgresos') {
                         <td>{$row['fechaEgreso']}</td>
                         <td>{$meses[$mes]}</td>
                         <td>{$row['gestion']}</td>
+                        <td>{$row['usuarioRegistro']}</td>
                         <td>Bs. " . number_format($row['monto'], 2) . "</td>
                         <td><button class='btn btn-danger btn-sm' onclick='eliminarEgreso({$row['id']})'><i class='bi bi-trash'></i></button></td>
                       </tr>";
         }
     }
-    $html .= '</tbody><tfoot><tr><th colspan="5" style="text-align:right">TOTAL:</th><th>Bs. ' . number_format($total, 2) . '</th><th></th></tr></tfoot></table>';
+    $html = preg_replace('/<th>Monto<\/th><th>.*?<\/th>/', '<th>Registrado Por</th><th>Monto</th><th>Accion</th>', $html, 1);
+    $html .= '</tbody><tfoot><tr><th colspan="6" style="text-align:right">TOTAL:</th><th>Bs. ' . number_format($total, 2) . '</th><th></th></tr></tfoot></table>';
     echo $html;
 }
 
@@ -1697,6 +1741,8 @@ if ($operacion == 'balanceGeneral') {
         }
     }
 
+    $egresosPorConcepto = $iregistro->traerTotalesEgresosPorConcepto($gestion);
+
     $html = '<table class="table table-bordered table-striped" id="tablaHistorico">
                 <thead class="bg-dark text-white">
                     <tr>
@@ -1715,10 +1761,12 @@ if ($operacion == 'balanceGeneral') {
         $t_liq += $liq;
 
         $color = $liq >= 0 ? 'text-success' : 'text-danger';
+        $urlIngresos = "../ingresos/?gestion=" . urlencode($gestion) . "&mes=" . urlencode($i) . "&origen=balance";
+        $urlEgresos = "../egresos/?gestion=" . urlencode($gestion) . "&mes=" . urlencode($i) . "&origen=balance";
         $html .= "<tr>
                     <td>{$meses[$i]}</td>
-                    <td class='text-primary'>Bs. " . number_format($ingresosMes[$i], 2) . "</td>
-                    <td class='text-danger'>Bs. " . number_format($egresosMes[$i], 2) . "</td>
+                    <td class='text-primary'><a href='{$urlIngresos}' class='text-primary fw-bold text-decoration-underline'>Bs. " . number_format($ingresosMes[$i], 2) . "</a></td>
+                    <td class='text-danger'><a href='{$urlEgresos}' class='text-danger fw-bold text-decoration-underline'>Bs. " . number_format($egresosMes[$i], 2) . "</a></td>
                     <td class='{$color}'><b>Bs. " . number_format($liq, 2) . "</b></td>
                   </tr>";
     }
@@ -1734,6 +1782,7 @@ if ($operacion == 'balanceGeneral') {
         'html' => $html,
         'ingresos' => array_values(array_slice($ingresosMes, 1)),
         'egresos' => array_values(array_slice($egresosMes, 1)),
+        'egresosPorConcepto' => $egresosPorConcepto ?: [],
         'totalIngresos' => number_format($t_ing, 2),
         'totalEgresos' => number_format($t_egr, 2),
         'totalLiquido' => number_format($t_liq, 2)

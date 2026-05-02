@@ -4,6 +4,7 @@ include '../../clases/registro.php';
 include '../../clases/parametros.php';
 $registro = new registro();
 $iparametro = new parametros();
+$vieneDeBalance = isset($_GET['origen']) && $_GET['origen'] === 'balance';
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -23,6 +24,9 @@ $iparametro = new parametros();
                     <h1>Registro de Mensualidades (Ingresos)</h1>
                 </div>
                 <div class="col-md-6" style="text-align:right;">
+                    <?php if($vieneDeBalance){ ?>
+                    <a class="btn btn-secondary me-2" href="../balance/">Volver al Balance</a>
+                    <?php } ?>
                     <button class="btn btn-primary" type="button" onclick="agregar()">Registrar Ingreso</button>
                 </div>
             </div>
@@ -33,12 +37,12 @@ $iparametro = new parametros();
                     <div class="card shadow-lg" style="border-top:solid 3px blue;">
                         <div class="card-body">
                             <div class="row pt-3">
-                                <div class="col-md-3">
-                                    <label>Gestión</label>
+                                <div class="col-md-2">
+                                    <label>Gestion</label>
                                     <input type="number" id="txtGestionFiltro" class="form-control"
-                                        value="<?php echo date('Y'); ?>">
+                                        value="<?php echo date('Y'); ?>" onchange="traerAlumnosFiltroIngreso()">
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <label>Mes</label>
                                     <select id="txtMesFiltro" class="form-select">
                                         <option value="0">Todos los Meses</option>
@@ -54,6 +58,18 @@ $iparametro = new parametros();
                                         <option value="10">Octubre</option>
                                         <option value="11">Noviembre</option>
                                         <option value="12">Diciembre</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label>Curso</label>
+                                    <select id="txtCursoFiltro" class="form-select" onchange="traerAlumnosFiltroIngreso()">
+                                        <?php echo $iparametro->DropDownCursos(); ?>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label>Alumno</label>
+                                    <select id="txtAlumnoFiltro" class="form-select">
+                                        <option value="0">Todos los alumnos</option>
                                     </select>
                                 </div>
                                 <div class="col-md-2 mt-4">
@@ -72,8 +88,27 @@ $iparametro = new parametros();
     <?php include_once "../../contenido/extensionesFooter.php"; ?>
     <script>
         $(document).ready(function () {
-            filtrar();
-        })
+            aplicarFiltrosDesdeUrl();
+            traerAlumnosFiltroIngreso(function () {
+                filtrar();
+            });
+        });
+
+        function aplicarFiltrosDesdeUrl() {
+            var params = new URLSearchParams(window.location.search);
+            var gestion = params.get('gestion');
+            var mes = params.get('mes');
+
+            if (gestion) {
+                $("#txtGestionFiltro").val(gestion);
+            }
+
+            if (mes) {
+                $("#txtMesFiltro").val(mes);
+                $("#txtMes").val(mes);
+            }
+        }
+
         function agregar() { $("#modalCrear").modal('show'); }
 
         function ConfirmarRegistrar() {
@@ -84,7 +119,7 @@ $iparametro = new parametros();
             var mes = $("#txtMes").val();
             var concepto = $("#txtConcepto").val();
 
-            if (codAlumno == 0 || monto == "" || concepto == "") { swal('Ops', 'Llene los datos básicos.', 'warning'); return; }
+            if (codAlumno == 0 || monto == "" || concepto == "") { swal('Ops', 'Llene los datos basicos.', 'warning'); return; }
 
             $.post("../../respuestaParcial.php?operacion=crearIngreso", {
                 codAlumno: codAlumno, monto: monto, fechaPago: fechaPago, gestion: gestion, mes: mes, concepto: concepto
@@ -121,12 +156,37 @@ $iparametro = new parametros();
             });
         }
 
+        function traerAlumnosFiltroIngreso(callback) {
+            var gestion = $("#txtGestionFiltro").val();
+            var codCurso = $("#txtCursoFiltro").val();
+            var alumnoSeleccionado = $("#txtAlumnoFiltro").attr('data-selected') || "0";
+
+            if (codCurso == 0 || codCurso == "") {
+                $("#txtAlumnoFiltro").html('<option value="0">Todos los alumnos</option>');
+                $("#txtAlumnoFiltro").removeAttr('data-selected');
+                if (typeof callback === 'function') callback();
+                return;
+            }
+
+            $("#txtAlumnoFiltro").html('<option value="0">Cargando...</option>');
+            $.post("../../respuestaParcial.php?operacion=traerAlumnosFiltroFinanzas", {
+                gestion: gestion, codCurso: codCurso
+            }, function (data) {
+                $("#txtAlumnoFiltro").html('<option value="0">Todos los alumnos</option>' + data);
+                $("#txtAlumnoFiltro").val(alumnoSeleccionado);
+                $("#txtAlumnoFiltro").removeAttr('data-selected');
+                if (typeof callback === 'function') callback();
+            });
+        }
+
         function filtrar() {
             var gestion = $("#txtGestionFiltro").val();
             var mes = $("#txtMesFiltro").val();
+            var codCurso = $("#txtCursoFiltro").val();
+            var codAlumno = $("#txtAlumnoFiltro").val();
             $("#divResultado").html('Cargando...');
             $.post("../../respuestaParcial.php?operacion=traerIngresos", {
-                gestion: gestion, mes: mes
+                gestion: gestion, mes: mes, codCurso: codCurso, codAlumno: codAlumno
             }, function (data) {
                 $("#divResultado").html(data);
                 $('#tablaHistorico').DataTable({ "scrollX": true });
@@ -141,7 +201,7 @@ $iparametro = new parametros();
                 </div>
                 <div class="modal-body row">
                     <div class="col-md-6 mt-2">
-                        <label>Gestión Estudiantil</label>
+                        <label>Gestion Estudiantil</label>
                         <input type="number" id="txtGestionAlumno" class="form-control shadow-lg"
                             value="<?php echo date('Y'); ?>" onchange="traerAlumnosHabilitados()">
                     </div>
@@ -154,7 +214,7 @@ $iparametro = new parametros();
                     <div class="col-md-12 mt-2">
                         <label>Estudiante (Activos)</label>
                         <select id="txtAlumno" class="form-select shadow-lg">
-                            <option value="0">Seleccione Gestión y Grado primero...</option>
+                            <option value="0">Seleccione Gestion y Grado primero...</option>
                         </select>
                     </div>
                     <div class="col-md-6 mt-2"><label>Monto a Pagar (Bs.)</label><input type="number" id="txtMonto"
@@ -162,46 +222,22 @@ $iparametro = new parametros();
                     <div class="col-md-6 mt-2" style="display:none;"><label>Fecha Registro Pago</label><input
                             type="date" id="txtFecha" class="form-control shadow-lg"
                             value="<?php echo date('Y-m-d'); ?>"></div>
-                    <div class="col-md-6 mt-2" style="display: none;"><label>Gestión de Cobro</label><input type="number" id="txtGestion"
+                    <div class="col-md-6 mt-2" style="display: none;"><label>Gestion de Cobro</label><input type="number" id="txtGestion"
                             class="form-control shadow-lg" value="<?php echo date('Y'); ?>" readonly></div>
                     <div class="col-md-6 mt-2"><label>Mes a Pagar</label>
                         <select id="txtMes" class="form-select shadow-lg">
-                            <option value="1" <?php if (date('n') == 1) {
-                                echo "selected";
-                            } ?>>Enero</option>
-                            <option value="2" <?php if (date('n') == 2) {
-                                echo "selected";
-                            } ?>>Febrero</option>
-                            <option value="3" <?php if (date('n') == 3) {
-                                echo "selected";
-                            } ?>>Marzo</option>
-                            <option value="4" <?php if (date('n') == 4) {
-                                echo "selected";
-                            } ?>>Abril</option>
-                            <option value="5" <?php if (date('n') == 5) {
-                                echo "selected";
-                            } ?>>Mayo</option>
-                            <option value="6" <?php if (date('n') == 6) {
-                                echo "selected";
-                            } ?>>Junio</option>
-                            <option value="7" <?php if (date('n') == 7) {
-                                echo "selected";
-                            } ?>>Julio</option>
-                            <option value="8" <?php if (date('n') == 8) {
-                                echo "selected";
-                            } ?>>Agosto</option>
-                            <option value="9" <?php if (date('n') == 9) {
-                                echo "selected";
-                            } ?>>Septiembre</option>
-                            <option value="10" <?php if (date('n') == 10) {
-                                echo "selected";
-                            } ?>>Octubre</option>
-                            <option value="11" <?php if (date('n') == 11) {
-                                echo "selected";
-                            } ?>>Noviembre</option>
-                            <option value="12" <?php if (date('n') == 12) {
-                                echo "selected";
-                            } ?>>Diciembre</option>
+                            <option value="1" <?php if (date('n') == 1) { echo "selected"; } ?>>Enero</option>
+                            <option value="2" <?php if (date('n') == 2) { echo "selected"; } ?>>Febrero</option>
+                            <option value="3" <?php if (date('n') == 3) { echo "selected"; } ?>>Marzo</option>
+                            <option value="4" <?php if (date('n') == 4) { echo "selected"; } ?>>Abril</option>
+                            <option value="5" <?php if (date('n') == 5) { echo "selected"; } ?>>Mayo</option>
+                            <option value="6" <?php if (date('n') == 6) { echo "selected"; } ?>>Junio</option>
+                            <option value="7" <?php if (date('n') == 7) { echo "selected"; } ?>>Julio</option>
+                            <option value="8" <?php if (date('n') == 8) { echo "selected"; } ?>>Agosto</option>
+                            <option value="9" <?php if (date('n') == 9) { echo "selected"; } ?>>Septiembre</option>
+                            <option value="10" <?php if (date('n') == 10) { echo "selected"; } ?>>Octubre</option>
+                            <option value="11" <?php if (date('n') == 11) { echo "selected"; } ?>>Noviembre</option>
+                            <option value="12" <?php if (date('n') == 12) { echo "selected"; } ?>>Diciembre</option>
                         </select>
                     </div>
                     <div class="col-md-12 mt-2" style="display: none;">

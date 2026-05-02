@@ -1691,21 +1691,71 @@ class registro
 
 
     // FINANZAS
-    public function crearIngreso($codAlumno, $monto, $fechaPago, $mes, $gestion, $concepto) {
+    private function asegurarColumnasUsuarioFinanzas($db) {
+        $tablas = array('ingresos', 'egresos');
+        foreach ($tablas as $tabla) {
+            $sqlCheck = "SHOW COLUMNS FROM `$tabla` LIKE 'codUsuario'";
+            if (!$db->Query($sqlCheck)) {
+                return false;
+            }
+
+            if ($db->RowCount() == 0) {
+                $sqlAlter = "ALTER TABLE `$tabla` ADD COLUMN `codUsuario` int(11) DEFAULT NULL AFTER `concepto`";
+                if (!$db->Query($sqlAlter)) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    public function crearIngreso($codAlumno, $monto, $fechaPago, $mes, $gestion, $concepto, $codUsuario) {
         $db = new MySQL();
-        $consulta = "INSERT INTO ingresos (codAlumno, monto, fechaPago, mes, gestion, concepto) VALUES ($codAlumno, $monto, '$fechaPago', $mes, $gestion, '$concepto')";
+        if (!$this->asegurarColumnasUsuarioFinanzas($db)) {
+            return array('request' => 'error', 'mensaje' => 'No se pudo preparar la tabla de ingresos');
+        }
+
+        $sqlExiste = "SELECT id FROM ingresos
+                      WHERE codAlumno = " . $db->GetSQLValue($codAlumno, MySQL::SQLVALUE_NUMBER) . "
+                        AND mes = " . $db->GetSQLValue($mes, MySQL::SQLVALUE_NUMBER) . "
+                        AND gestion = " . $db->GetSQLValue($gestion, MySQL::SQLVALUE_NUMBER) . "
+                        AND baja = 0
+                      LIMIT 1";
+        if (!$db->Query($sqlExiste)) {
+            return array('request' => 'error', 'mensaje' => 'No se pudo validar el ingreso');
+        }
+
+        if ($db->RowCount() > 0) {
+            return array('request' => 'error', 'mensaje' => 'Ese estudiante ya tiene un registrada la mensualidad para el mismo mes indicado');
+        }
+
+        $consulta = "INSERT INTO ingresos (codAlumno, monto, fechaPago, mes, gestion, concepto, codUsuario) VALUES (" .
+            $db->GetSQLValue($codAlumno, MySQL::SQLVALUE_NUMBER) . ", " .
+            $db->GetSQLValue($monto, MySQL::SQLVALUE_NUMBER) . ", " .
+            $db->GetSQLValue($fechaPago) . ", " .
+            $db->GetSQLValue($mes, MySQL::SQLVALUE_NUMBER) . ", " .
+            $db->GetSQLValue($gestion, MySQL::SQLVALUE_NUMBER) . ", " .
+            $db->GetSQLValue($concepto) . ", " .
+            $db->GetSQLValue($codUsuario, MySQL::SQLVALUE_NUMBER) . ")";
         if (!$db->Query($consulta)) { return array('request' => 'error', 'mensaje' => 'Error al registrar ingreso'); }
         return array('request' => 'ok', 'mensaje' => 'Ingreso registrado exitosamente');
     }
 
-    public function traerIngresos($gestion, $mes) {
+    public function traerIngresos($gestion, $mes, $codCurso = 0, $codAlumno = 0) {
         $db = new MySQL();
+        if (!$this->asegurarColumnasUsuarioFinanzas($db)) return false;
         $cond = "";
         if ($mes > 0) $cond = " AND i.mes = $mes ";
-        $c = "SELECT i.*, CONCAT(a.apellidos, ' ', a.nombres) as nombreAlumno, cu.grado as curso, cu.nivel 
+        if ($codCurso > 0) $cond .= " AND a.codCurso = " . intval($codCurso);
+        if ($codAlumno > 0) $cond .= " AND i.codAlumno = " . intval($codAlumno);
+        $c = "SELECT i.*, CONCAT(a.apellidos, ' ', a.nombres) as nombreAlumno, cu.grado as curso, cu.nivel,
+                    COALESCE(CONCAT(per.nombre, ' ', per.apellidos), u.usuario, 'Sin usuario') as usuarioRegistro
               FROM ingresos i 
               LEFT JOIN cursoAlumnos a ON i.codAlumno = a.id 
               LEFT JOIN curso cu ON a.codCurso = cu.id
+              LEFT JOIN usuario u ON i.codUsuario = u.codUsuario
+              LEFT JOIN persona per ON u.codPersona = per.id
               WHERE i.gestion = $gestion $cond AND i.baja = 0 
               ORDER BY i.id DESC";
         if (!$db->Query($c)) return false;
@@ -1738,6 +1788,25 @@ class registro
         return $res;
     }
 
+    public function traerTotalesEgresosPorConcepto($gestion) {
+        $db = new MySQL();
+        $c = "SELECT concepto, SUM(monto) as total
+              FROM egresos
+              WHERE gestion = " . intval($gestion) . " AND baja = 0
+              GROUP BY concepto
+              ORDER BY total DESC, concepto ASC";
+        if (!$db->Query($c)) return false;
+        $res = [];
+        while (!$db->EndOfSeek()) {
+            $row = $db->Row();
+            $res[] = array(
+                'concepto' => $row->concepto,
+                'total' => (float)$row->total
+            );
+        }
+        return $res;
+    }
+
     public function traerDeudores($gestion, $mes, $codCurso, $codAlumno) {
         $db = new MySQL();
         $cond = "";
@@ -1760,18 +1829,197 @@ class registro
         return $res;
     }
 
-    public function crearEgreso($monto, $fechaEgreso, $mes, $gestion, $concepto) {
+    private function asegurarTablaConceptosEgreso($db) {
+        $sqlTabla = "CREATE TABLE IF NOT EXISTS conceptos_egresos (
+            id INT(11) NOT NULL AUTO_INCREMENT,
+            concepto VARCHAR(255) NOT NULL,
+            baja TINYINT(1) DEFAULT 0,
+            PRIMARY KEY (id),
+            UNIQUE KEY uk_concepto_egreso (concepto)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+
+        if (!$db->Query($sqlTabla)) {
+            return false;
+        }
+
+        $sqlMigracion = "INSERT IGNORE INTO conceptos_egresos (concepto)
+                         SELECT DISTINCT TRIM(concepto)
+                         FROM egresos
+                         WHERE baja = 0
+                           AND concepto IS NOT NULL
+                           AND TRIM(concepto) <> ''";
+
+        $db->Query($sqlMigracion);
+        return true;
+    }
+
+    public function crearConceptoEgreso($concepto) {
         $db = new MySQL();
-        $consulta = "INSERT INTO egresos (monto, fechaEgreso, mes, gestion, concepto) VALUES ($monto, '$fechaEgreso', $mes, $gestion, '$concepto')";
+        $concepto = trim($concepto);
+
+        if ($concepto === '') {
+            return array('request' => 'error', 'mensaje' => 'Debe ingresar un concepto');
+        }
+
+        if (!$this->asegurarTablaConceptosEgreso($db)) {
+            return array('request' => 'error', 'mensaje' => 'No se pudo preparar la tabla de conceptos');
+        }
+
+        $sqlBuscar = "SELECT * FROM conceptos_egresos WHERE concepto = " . $db->GetSQLValue($concepto) . " LIMIT 1";
+        if (!$db->Query($sqlBuscar)) {
+            return array('request' => 'error', 'mensaje' => 'Error al validar el concepto');
+        }
+
+        if ($db->RowCount() > 0) {
+            $row = $db->Row();
+            if ((int)$row->baja === 1) {
+                $sqlActivar = "UPDATE conceptos_egresos SET baja = 0 WHERE id = " . $db->GetSQLValue($row->id, MySQL::SQLVALUE_NUMBER);
+                if (!$db->Query($sqlActivar)) {
+                    return array('request' => 'error', 'mensaje' => 'No se pudo reactivar el concepto');
+                }
+            }
+
+            return array(
+                'request' => 'ok',
+                'mensaje' => 'Concepto disponible',
+                'id' => (int)$row->id,
+                'concepto' => $concepto
+            );
+        }
+
+        $sqlInsert = "INSERT INTO conceptos_egresos (concepto, baja) VALUES (" . $db->GetSQLValue($concepto) . ", 0)";
+        if (!$db->Query($sqlInsert)) {
+            return array('request' => 'error', 'mensaje' => 'Error al guardar el concepto');
+        }
+
+        return array(
+            'request' => 'ok',
+            'mensaje' => 'Concepto registrado exitosamente',
+            'id' => (int)$db->GetLastInsertID(),
+            'concepto' => $concepto
+        );
+    }
+
+    public function traerConceptosEgreso($soloActivos = true) {
+        $db = new MySQL();
+        if (!$this->asegurarTablaConceptosEgreso($db)) {
+            return false;
+        }
+
+        $condicion = $soloActivos ? "WHERE baja = 0" : "";
+        $sql = "SELECT id, concepto, baja FROM conceptos_egresos $condicion ORDER BY concepto ASC";
+        if (!$db->Query($sql)) {
+            return false;
+        }
+
+        $res = [];
+        while (!$db->EndOfSeek()) {
+            $res[] = (array)$db->Row();
+        }
+        return $res;
+    }
+
+    public function editarConceptoEgreso($id, $concepto) {
+        $db = new MySQL();
+        $concepto = trim($concepto);
+
+        if (!$this->asegurarTablaConceptosEgreso($db)) {
+            return array('request' => 'error', 'mensaje' => 'No se pudo preparar la tabla de conceptos');
+        }
+
+        if ($concepto === '') {
+            return array('request' => 'error', 'mensaje' => 'Debe ingresar un concepto');
+        }
+
+        $sqlValidar = "SELECT id FROM conceptos_egresos
+                       WHERE concepto = " . $db->GetSQLValue($concepto) . "
+                         AND id <> " . $db->GetSQLValue($id, MySQL::SQLVALUE_NUMBER) . "
+                       LIMIT 1";
+        if (!$db->Query($sqlValidar)) {
+            return array('request' => 'error', 'mensaje' => 'Error al validar el concepto');
+        }
+
+        if ($db->RowCount() > 0) {
+            return array('request' => 'error', 'mensaje' => 'Ya existe otro concepto con ese nombre');
+        }
+
+        $sql = "UPDATE conceptos_egresos
+                SET concepto = " . $db->GetSQLValue($concepto) . "
+                WHERE id = " . $db->GetSQLValue($id, MySQL::SQLVALUE_NUMBER);
+        if (!$db->Query($sql)) {
+            return array('request' => 'error', 'mensaje' => 'Error al editar el concepto');
+        }
+
+        return array('request' => 'ok', 'mensaje' => 'Concepto actualizado exitosamente');
+    }
+
+    public function desactivarConceptoEgreso($id) {
+        $db = new MySQL();
+        if (!$this->asegurarTablaConceptosEgreso($db)) {
+            return array('request' => 'error', 'mensaje' => 'No se pudo preparar la tabla de conceptos');
+        }
+
+        $sql = "UPDATE conceptos_egresos SET baja = 1 WHERE id = " . $db->GetSQLValue($id, MySQL::SQLVALUE_NUMBER);
+        if (!$db->Query($sql)) {
+            return array('request' => 'error', 'mensaje' => 'Error al dar de baja el concepto');
+        }
+
+        return array('request' => 'ok', 'mensaje' => 'Concepto dado de baja exitosamente');
+    }
+
+    public function activarConceptoEgreso($id) {
+        $db = new MySQL();
+        if (!$this->asegurarTablaConceptosEgreso($db)) {
+            return array('request' => 'error', 'mensaje' => 'No se pudo preparar la tabla de conceptos');
+        }
+
+        $sql = "UPDATE conceptos_egresos SET baja = 0 WHERE id = " . $db->GetSQLValue($id, MySQL::SQLVALUE_NUMBER);
+        if (!$db->Query($sql)) {
+            return array('request' => 'error', 'mensaje' => 'Error al activar el concepto');
+        }
+
+        return array('request' => 'ok', 'mensaje' => 'Concepto activado exitosamente');
+    }
+
+    public function crearEgreso($monto, $fechaEgreso, $mes, $gestion, $concepto, $codUsuario) {
+        $db = new MySQL();
+        $concepto = trim($concepto);
+
+        if ($concepto === '') {
+            return array('request' => 'error', 'mensaje' => 'Debe seleccionar un concepto');
+        }
+
+        if (!$this->asegurarColumnasUsuarioFinanzas($db)) {
+            return array('request' => 'error', 'mensaje' => 'No se pudo preparar la tabla de egresos');
+        }
+
+        $this->crearConceptoEgreso($concepto);
+
+        $consulta = "INSERT INTO egresos (monto, fechaEgreso, mes, gestion, concepto, codUsuario) VALUES (" .
+            $db->GetSQLValue($monto, MySQL::SQLVALUE_NUMBER) . ", " .
+            $db->GetSQLValue($fechaEgreso) . ", " .
+            $db->GetSQLValue($mes, MySQL::SQLVALUE_NUMBER) . ", " .
+            $db->GetSQLValue($gestion, MySQL::SQLVALUE_NUMBER) . ", " .
+            $db->GetSQLValue($concepto) . ", " .
+            $db->GetSQLValue($codUsuario, MySQL::SQLVALUE_NUMBER) . ")";
         if (!$db->Query($consulta)) { return array('request' => 'error', 'mensaje' => 'Error al registrar egreso'); }
         return array('request' => 'ok', 'mensaje' => 'Egreso registrado exitosamente');
     }
 
-    public function traerEgresos($gestion, $mes) {
+    public function traerEgresos($gestion, $mes, $concepto = '') {
         $db = new MySQL();
+        if (!$this->asegurarColumnasUsuarioFinanzas($db)) return false;
         $cond = "";
         if ($mes > 0) $cond = " AND mes = $mes ";
-        $c = "SELECT * FROM egresos WHERE gestion = $gestion $cond AND baja = 0 ORDER BY id DESC";
+        if (trim($concepto) !== '') {
+            $cond .= " AND concepto = " . $db->GetSQLValue(trim($concepto));
+        }
+        $c = "SELECT e.*,
+                    COALESCE(CONCAT(per.nombre, ' ', per.apellidos), u.usuario, 'Sin usuario') as usuarioRegistro
+              FROM egresos e
+              LEFT JOIN usuario u ON e.codUsuario = u.codUsuario
+              LEFT JOIN persona per ON u.codPersona = per.id
+              WHERE e.gestion = $gestion $cond AND e.baja = 0 ORDER BY e.id DESC";
         if (!$db->Query($c)) return false;
         $res = [];
         while (!$db->EndOfSeek()) { $res[] = (array)$db->Row(); }

@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
 
-  <title>Iniciar Sesión</title>
+  <title>Iniciar Sesi&oacute;n</title>
   <meta content="" name="description">
   <meta content="" name="keywords">
 
@@ -45,17 +45,10 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.5); /* ← controla la oscuridad */
+    background: rgba(0, 0, 0, 0.5);
     z-index: -1;
 }
  </style>
-  <!-- =======================================================
-  * Template Name: NiceAdmin
-  * Updated: May 30 2023 with Bootstrap v5.3.0
-  * Template URL: https://bootstrapmade.com/nice-admin-bootstrap-admin-html-template/
-  * Author: BootstrapMade.com
-  * License: https://bootstrapmade.com/license/
-  ======================================================== -->
 </head>
 
 <body class="hold-transition login-page fondo-login"  style="background:
@@ -76,9 +69,7 @@ background-size: cover;
             <div class="col-lg-4 col-md-6 d-flex flex-column align-items-center justify-content-center">
             
               <div class="d-flex justify-content-center py-4">
-               
-              
-              </div><!-- End Logo -->
+              </div>
 
               <div class="card mb-3 tarjeta">
 
@@ -88,7 +79,7 @@ background-size: cover;
                     <img src="imagenes/cabecera.jpg" class="img-circle elevation-2" alt="User Image" width="100%">
                   </div>
                   <div class="pt-1 pb-2">
-                    <h5 class="card-title text-center pb-0 fs-4">Iniciar Sesión</h5>                
+                    <h5 class="card-title text-center pb-0 fs-4">Iniciar Sesi&oacute;n</h5>
                   </div>
 
                   <form class="row g-3 " method="post">
@@ -96,15 +87,14 @@ background-size: cover;
                     <div class="col-12">
                         <div class="form-floating mb-3">
                           <input type="text" class="form-control" id="usuario" placeholder="Usuario">
-                          <label for="floatingInput">Usuario</label>         
+                          <label for="floatingInput">Usuario</label>
                         </div>
-                     
                     </div>
 
                     <div class="col-12">
                       <div class="form-floating mb-3 position-relative">
-                        <input type="password" class="form-control" id="contra" placeholder="Contraseña">
-                        <label for="floatingInput">Contraseña</label>
+                        <input type="password" class="form-control" id="contra" placeholder="Contrase&ntilde;a">
+                        <label for="floatingInput">Contrase&ntilde;a</label>
                         <span class="position-absolute end-0 top-50 translate-middle-y pe-3" style="cursor: pointer; z-index: 10;" onclick="togglePassword()">
                           <i class="bi bi-eye" id="togglePasswordIcon"></i>
                         </span>
@@ -112,15 +102,14 @@ background-size: cover;
                     </div>
                    
                     <div class="col-12">
-                      <button class="btn btn-primary w-100" type="button" onclick="autenticacion();">Iniciar Sesión</button>
+                      <button class="btn btn-primary w-100" type="button" onclick="autenticacion();">Iniciar Sesi&oacute;n</button>
                     </div>
                    
                     <br>
-                    <div id="divInicioSesion"></div>
                   </form>
 
                 </div>
-              </div>          
+              </div>
             </div>
           </div>
         </div>
@@ -128,17 +117,15 @@ background-size: cover;
       </section>
 
     </div>
-  </main><!-- End #main -->
+  </main>
 
-  <?php 
+  <?php
   $ruta_assets = "assets/";
-  include_once "contenido/extensionesFooter.php"; 
+  include_once "contenido/extensionesFooter.php";
   ?>
 
   <a href="#" class="back-to-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
 
-
-  <!-- Modal para cargar--> 
   <div class="modal fade" id="ModalCargarPagina">
         <div class="modal-dialog">
           <div class="modal-content">
@@ -150,14 +137,10 @@ background-size: cover;
               </div>
             </div>
           </div>
-          <!-- /.modal-content -->
         </div>
-        <!-- /.modal-dialog -->
     </div>
-      <!-- /.modal -->
 
-
-      <script>
+  <script>
     function togglePassword() {
       const passwordInput = document.getElementById('contra');
       const icon = document.getElementById('togglePasswordIcon');
@@ -173,15 +156,13 @@ background-size: cover;
     }
 
     $(document).ready(function() {
-        // Detectar Enter en un input específico
         $("#miInput").keydown(function(event) {
-            if (event.keyCode === 13) { // 13 = Enter
-                event.preventDefault(); // evita que se envíe el formulario
+            if (event.keyCode === 13) {
+                event.preventDefault();
                autenticacion()
             }
         });
         
-        // Detectar Enter en toda la página
         $(document).keydown(function(event) {
             if (event.keyCode === 13) {
                autenticacion()
@@ -190,13 +171,15 @@ background-size: cover;
     });
 
     function autenticacion(){
-   
-  
         var user = $("#usuario").val();
         var contra = $("#contra").val();
 
         if(user == "" || contra == ""){
-          $("#divInicioSesion").html("<div class='alert alert-warning' role='alert'>Debe ingresar el usuario y/o contraseña</div>");         
+          Swal.fire({
+            icon: 'warning',
+            title: 'Campos requeridos',
+            text: 'Debe ingresar el usuario y la contrase\u00f1a.'
+          });
           return false;
         }
 
@@ -206,23 +189,21 @@ background-size: cover;
         data: {
             user: user,
             contra: contra
-            },     
+            },
             success: function(data) {
-                if(data == 'ok'){ 
-                    $("#ModalCargarPagina").modal("show");               
+                if(data == 'ok'){
+                    $("#ModalCargarPagina").modal("show");
                     window.location.href = "view/anuncios/";
                 }
                 else{
-                   
-                  $("#divInicioSesion").html("<div class='alert alert-warning' role='alert'>La contraseña es incorrecta</div>");
-                  setTimeout(() => {
-                    $("#divInicioSesion").html("");
-                  }, 3500);
-                  
-                 // event.preventDefault();                              
+                  Swal.fire({
+                    icon: 'error',
+                    title: 'Acceso denegado',
+                    text: 'El usuario o la contrase\u00f1a son incorrectos.'
+                  });
                 }
-            }            
-        })         
+            }
+        })
     }
 
 </script>

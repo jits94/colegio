@@ -221,6 +221,32 @@ INSERT INTO `departamento` VALUES (1,'Chuquisaca',0),(2,'La Paz',0),(3,'Cochabam
 UNLOCK TABLES;
 
 --
+-- Table structure for table `conceptos_egresos`
+--
+
+DROP TABLE IF EXISTS `conceptos_egresos`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `conceptos_egresos` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `concepto` varchar(255) NOT NULL,
+  `baja` tinyint(1) DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_concepto_egreso` (`concepto`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `conceptos_egresos`
+--
+
+LOCK TABLES `conceptos_egresos` WRITE;
+/*!40000 ALTER TABLE `conceptos_egresos` DISABLE KEYS */;
+INSERT INTO `conceptos_egresos` VALUES (1,'pago de luz',0),(2,'pago al guardia',0);
+/*!40000 ALTER TABLE `conceptos_egresos` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `egresos`
 --
 
@@ -234,6 +260,7 @@ CREATE TABLE `egresos` (
   `mes` int(11) NOT NULL,
   `gestion` int(11) NOT NULL,
   `concepto` varchar(255) NOT NULL,
+  `codUsuario` int(11) DEFAULT NULL,
   `baja` tinyint(1) DEFAULT 0,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
@@ -245,7 +272,7 @@ CREATE TABLE `egresos` (
 
 LOCK TABLES `egresos` WRITE;
 /*!40000 ALTER TABLE `egresos` DISABLE KEYS */;
-INSERT INTO `egresos` VALUES (1,200.00,'2026-04-24',4,2026,'pago de luz',0),(2,500.00,'2026-04-24',4,2026,'pago al guardia',0);
+INSERT INTO `egresos` VALUES (1,200.00,'2026-04-24',4,2026,'pago de luz',1,0),(2,500.00,'2026-04-24',4,2026,'pago al guardia',1,0);
 /*!40000 ALTER TABLE `egresos` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -264,6 +291,7 @@ CREATE TABLE `ingresos` (
   `mes` int(11) NOT NULL,
   `gestion` int(11) NOT NULL,
   `concepto` varchar(255) NOT NULL,
+  `codUsuario` int(11) DEFAULT NULL,
   `baja` tinyint(1) DEFAULT 0,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4;
@@ -275,7 +303,7 @@ CREATE TABLE `ingresos` (
 
 LOCK TABLES `ingresos` WRITE;
 /*!40000 ALTER TABLE `ingresos` DISABLE KEYS */;
-INSERT INTO `ingresos` VALUES (1,2,250.00,'2026-04-24',4,2026,'Mensualidad Escolar',0),(2,41,250.00,'2026-04-24',4,2026,'Mensualidad Escolar',0),(3,37,250.00,'2026-04-24',4,2026,'Mensualidad Escolar',0),(4,2,250.00,'2026-04-24',5,2026,'Mensualidad Escolar',0),(5,3,250.00,'2026-04-24',5,2026,'Mensualidad Escolar',0),(6,52,250.00,'2026-04-24',5,2026,'Mensualidad Escolar',0),(7,52,250.00,'2026-04-24',5,2026,'Mensualidad Escolar',1);
+INSERT INTO `ingresos` VALUES (1,2,250.00,'2026-04-24',4,2026,'Mensualidad Escolar',1,0),(2,41,250.00,'2026-04-24',4,2026,'Mensualidad Escolar',1,0),(3,37,250.00,'2026-04-24',4,2026,'Mensualidad Escolar',1,0),(4,2,250.00,'2026-04-24',5,2026,'Mensualidad Escolar',1,0),(5,3,250.00,'2026-04-24',5,2026,'Mensualidad Escolar',1,0),(6,52,250.00,'2026-04-24',5,2026,'Mensualidad Escolar',1,0),(7,52,250.00,'2026-04-24',5,2026,'Mensualidad Escolar',1,1);
 /*!40000 ALTER TABLE `ingresos` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -429,6 +457,7 @@ CREATE TABLE `tipousuario` (
 LOCK TABLES `tipousuario` WRITE;
 /*!40000 ALTER TABLE `tipousuario` DISABLE KEYS */;
 INSERT INTO `tipousuario` VALUES (1,'Superusuario',0),(2,'Profesor(a)',0),(3,'Director(a)',0),(4,'Tutor(a)',0),(5,'Secretaría',0);
+INSERT INTO `tipousuario` VALUES (6,'Contabilidad',0);
 /*!40000 ALTER TABLE `tipousuario` ENABLE KEYS */;
 UNLOCK TABLES;
 

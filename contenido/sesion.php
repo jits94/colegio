@@ -46,6 +46,41 @@ $_SESSION['last_activity'] = time();
 
 if (!isset($_SESSION['codigousuario'])) {
     header("Location: ../../login.php");
-} 
+}
+
+$scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME']);
+$rutaBase = preg_replace('#/view/.*$#', '', $scriptName);
+$rutasFinanzas = array(
+    '/view/ingresos/',
+    '/view/deudores/',
+    '/view/egresos/',
+    '/view/conceptosEgresos/',
+    '/view/balance/'
+);
+
+if (isset($_SESSION['codTipoUsuario']) && (int)$_SESSION['codTipoUsuario'] === 6) {
+    $rutasPermitidas = $rutasFinanzas;
+    $permitido = false;
+    foreach ($rutasPermitidas as $ruta) {
+        if (strpos($scriptName, $ruta) !== false) {
+            $permitido = true;
+            break;
+        }
+    }
+
+    if (!$permitido) {
+        header("Location: " . $rutaBase . "/view/balance/");
+        exit;
+    }
+}
+
+if (isset($_SESSION['codTipoUsuario']) && ((int)$_SESSION['codTipoUsuario'] === 2 || (int)$_SESSION['codTipoUsuario'] === 4)) {
+    foreach ($rutasFinanzas as $ruta) {
+        if (strpos($scriptName, $ruta) !== false) {
+            header("Location: " . $rutaBase . "/view/anuncios/");
+            exit;
+        }
+    }
+}
 
 ?>

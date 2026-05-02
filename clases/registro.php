@@ -1901,17 +1901,15 @@ class registro
         if ($db->RowCount() > 0) {
             $row = $db->Row();
             if ((int)$row->baja === 1) {
-                $sqlActivar = "UPDATE conceptos_egresos SET baja = 0 WHERE id = " . $db->GetSQLValue($row->id, MySQL::SQLVALUE_NUMBER);
-                if (!$db->Query($sqlActivar)) {
-                    return array('request' => 'error', 'mensaje' => 'No se pudo reactivar el concepto');
-                }
+                return array(
+                    'request' => 'error',
+                    'mensaje' => 'Ese nombre ya existe en un concepto inactivo. Puedes activarlo desde la lista.'
+                );
             }
 
             return array(
-                'request' => 'ok',
-                'mensaje' => 'Concepto disponible',
-                'id' => (int)$row->id,
-                'concepto' => $concepto
+                'request' => 'error',
+                'mensaje' => 'Ese nombre ya existe.'
             );
         }
 

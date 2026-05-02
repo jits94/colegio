@@ -115,6 +115,10 @@
       backdrop-filter: blur(10px);
     }
 
+    .login-mobile-intro {
+      display: none;
+    }
+
     .login-title {
       font-family: "Poppins", sans-serif;
       font-size: clamp(2.2rem, 3vw, 3.4rem);
@@ -185,6 +189,7 @@
     .login-card-body {
       padding: 30px 28px 28px;
       color: var(--login-text);
+      text-align: center;
     }
 
     .login-kicker {
@@ -209,6 +214,11 @@
       color: #53708c;
       line-height: 1.6;
       font-size: 0.98rem;
+    }
+
+    .login-form,
+    .login-footer-note {
+      text-align: left;
     }
 
     .login-form .form-floating > .form-control {
@@ -334,6 +344,23 @@
 
       .login-copy {
         max-width: 640px;
+      }
+
+      .login-mobile-intro {
+        display: block;
+        text-align: center;
+        margin-bottom: 16px;
+      }
+
+      .login-mobile-intro .login-badge,
+      .login-mobile-intro .login-title {
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .login-story .login-badge,
+      .login-story .login-title {
+        display: none;
       }
     }
 
@@ -465,6 +492,14 @@
 
           <div class="col-lg-5 order-1 order-lg-2">
             <div class="login-panel">
+              <div class="login-mobile-intro">
+                <div class="login-badge">
+                  <i class="bi bi-mortarboard-fill"></i>
+                  <span>Plataforma Acad&eacute;mica Escolar</span>
+                </div>
+                <h1 class="login-title">Sistema para la gesti&oacute;n del colegio.</h1>
+              </div>
+
               <div class="card login-card">
                 <div class="login-card-body">
                   <div class="login-kicker">Bienvenido</div>
